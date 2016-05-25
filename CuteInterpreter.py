@@ -605,7 +605,10 @@ def Test_method(input):
     print "...", print_node(result)
 
 def Test_All():
-    while(True):
+    x = True
+    while(x):
         a = raw_input("> ")
+        if a == "exit()":
+            x = False;
         Test_method(a)
 Test_All()
