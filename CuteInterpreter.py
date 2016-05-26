@@ -322,6 +322,13 @@ class CuteInterpreter(object):
         rhs1 = arith_node.next
         rhs2 = rhs1.next if rhs1.next is not None else None
 
+        if rhs1.type is TokenType.ID:
+            if self.lookupTable(rhs1.value) is not None:
+                rhs1 = self.lookupTable(rhs1.value)
+        if rhs2.type is TokenType.ID:
+            if self.lookupTable(rhs2.value) is not None:
+                rhs2 = self.lookupTable(rhs2.value)
+
         rhs1 = self.run_expr(rhs1)
         rhs2 = self.run_expr(rhs2)
         if rhs1 is None or rhs2 is None:
@@ -526,12 +533,13 @@ class CuteInterpreter(object):
         :type root_node: Node
         """
         if root_node is None:
+            return None
+
+        if root_node.type is TokenType.ID:
             if(self.lookupTable(root_node.value) is not None):
                 return self.lookupTable(root_node.value)
             else:
                 return root_node
-        if root_node.type is TokenType.ID:
-            return root_node
         elif root_node.type is TokenType.INT:
             return root_node
         elif root_node.type is TokenType.TRUE:
