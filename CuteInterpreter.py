@@ -198,8 +198,9 @@ class TokenType():
 
 NODETYPE_NAMES = dict((eval(attr, globals(), TokenType.__dict__), attr) for attr in dir(TokenType()) if not callable(attr) and not attr.startswith("__"))
 
-class Node (object):
+table = dict()
 
+class Node (object):
     def __init__(self, type, value=None):
         self.next  = None
         self.value = value
@@ -314,13 +315,20 @@ class BasicPaser(object):
         return head
 
 class CuteInterpreter(object):
-
     TRUE_NODE = Node(TokenType.TRUE)
     FALSE_NODE = Node(TokenType.FALSE)
 
     def run_arith(self, arith_node):
         rhs1 = arith_node.next
         rhs2 = rhs1.next if rhs1.next is not None else None
+
+        rhs1 = self.run_expr(rhs1)
+        rhs2 = self.run_expr(rhs2)
+        if rhs1 is None or rhs2 is None:
+            print "run_arith run_expr is None"
+        if rhs1.type is not TokenType.INT or rhs2.type is not TokenType.INT:
+            print "Type error"
+            return None
 
         if rhs1.type is TokenType.LIST:
             rhs1 = self.run_arith(rhs1.value)
@@ -404,6 +412,19 @@ class CuteInterpreter(object):
             if node is None:return True
             return False
 
+        def insertTable(id, value):
+            """
+            :type id: String
+            :type value: Node
+            """
+            if value.type is TokenType.INT:
+                intNode = Node(TokenType.INT, value.value)
+                table[id] = intNode
+            elif value.type is TokenType.QUOTE:
+                table[id] = value
+            elif value.type is TokenType.LIST:
+                table[id] = value
+
         if func_node.type is TokenType.CAR:
             rhs1 = self.run_expr(rhs1)
             if not is_quote_list(rhs1):
@@ -414,15 +435,11 @@ class CuteInterpreter(object):
             return create_quote_node(result)
 
         elif func_node.type is TokenType.CDR:
-            #작성
+            rhs1 = self.run_expr(rhs1)
             if not is_quote_list(rhs1):
-                print("cdr error!")
-            rhs2 = rhs1.value.next
-            if rhs2.value.next is None:
-                rhs2.value.value = ''
-            else:
-                rhs2.value = rhs2.value.next
-            return rhs1
+                print ("cdr error!")
+            result = pop_node_from_quote_list(rhs1)
+            return create_quote_node(result.next,True)
 
         elif func_node.type is TokenType.CONS:
             expr_rhs1 = self.run_expr(rhs1)
@@ -477,8 +494,15 @@ class CuteInterpreter(object):
                     break
                 else:
                     rhs1 = rhs1.next
-        #elif func_node.type is TokenType.DEFINE:
-
+        elif func_node.type is TokenType.DEFINE:
+            if rhs2.type is TokenType.INT:
+                insertTable(rhs1.value, rhs2)
+            elif rhs2.type is TokenType.QUOTE:
+                insertTable(rhs1.value, rhs2)
+            elif rhs2.type is TokenType.LIST:
+                rhs2 = self.run_expr(rhs2)
+                insertTable(rhs1.value, rhs2)
+            return
         else:
             return None
 
@@ -512,7 +536,7 @@ class CuteInterpreter(object):
             return l_node
         if op_code.type in \
                 [TokenType.CAR, TokenType.CDR, TokenType.CONS, TokenType.ATOM_Q,\
-                 TokenType.EQ_Q, TokenType.NULL_Q, TokenType.NOT, TokenType.COND]:
+                 TokenType.EQ_Q, TokenType.NULL_Q, TokenType.NOT, TokenType.COND, TokenType.DEFINE]:
             return self.run_func(op_code)
         if op_code.type is TokenType.QUOTE:
             return l_node
@@ -602,11 +626,14 @@ def Test_method(input):
     node = test_basic_paser.parse_expr()
     cute_inter = CuteInterpreter()
     result = cute_inter.run_expr(node)
-    print "...", print_node(result)
+    if result is None:
+        print_node(result)
+    else:
+        print "...", print_node(result)
 
 def Test_All():
     x = True
-    while(x):
+    while (x):
         a = raw_input("> ")
         if a == "exit()":
             x = False;
