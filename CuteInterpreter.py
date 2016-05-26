@@ -506,13 +506,30 @@ class CuteInterpreter(object):
         else:
             return None
 
+    def lookupTable(self, id):
+        """
+        :type id: String
+        :return:
+        """
+        temp = table[id]
+        if temp is not None:
+            if temp.type is TokenType.INT:
+                return temp
+            elif temp.type is TokenType.QUOTE:
+                return temp
+            elif temp.type is TokenType.LIST:
+                return temp
+        return None
+
     def run_expr(self, root_node):
         """
         :type root_node: Node
         """
         if root_node is None:
-            return None
-
+            if(self.lookupTable(root_node.value) is not None):
+                return self.lookupTable(root_node.value)
+            else:
+                return root_node
         if root_node.type is TokenType.ID:
             return root_node
         elif root_node.type is TokenType.INT:
